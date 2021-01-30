@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+
+	<!--<include file="$(find zed_wrapper)/launch/zedm.launch"/>  -->
+
+	<node pkg="rosbag" type="play" name="player" output="log" args="--clock /home/jlew/bagfiles/uc/modex03.bag"/>
+
+	<node pkg="web_video_server" name="video_server" type="web_video_server" respawn="true" respawn_delay="5">
+          <param name="port" value="8080"/>
+          <param name="server_threads" value="2"/>
+          <param name="ros_threads" value="2"/>
+	</node>
+
+	<node pkg="topic_tools" type="throttle" args="messages /zed1/right/image_rect_color 5 /zed1/right/image_rect_color_f" name="throttle_node" output="log" />  
+
+    <node pkg="octomap_server" type="modex_rack_layer4.py" name="check_rack_node" output="screen" />
+
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+		<param name="resolution" value="0.05" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="map" />
+		
+		<param name="height_map" value="false" />
+		<param name="depth_map" value="true"  />
+		<param name="color_factor" value ="1.4"  />
+
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="2.1" />
+       
+	    <param name="pointcloud_min_z" value="0.05"/>
+	    <param name="pointcloud_max_z" value="3.1"/>
+
+        <param name="sensor_model/min" value="0.12"/>
+        <param name="sensor_model/max" value="0.9"/>
+
+        <param name="sensor_model/hit"   value="0.6" />
+        <param name="sensor_model/miss"   value="0.4" />    
+	
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/zed1/point_cloud/cloud_registered" />
+	</node>
+
+	<node pkg="zed-tensorflow" name="object_detection" type="object_detection_depth.py" />
+    <!-- Launch rviz display-->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d /home/jlew/modex.rviz" output="log" />
+
+</launch>
